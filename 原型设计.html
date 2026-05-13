@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文登六级高分冲刺课程 - 全端原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'PingFang SC', sans-serif; background-color: #f8fafc; }
+        .active-tab { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+        .sidebar-active { background-color: #eff6ff; color: #2563eb; border-right: 4px solid #2563eb; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        /* 隐藏滚动条但保留滚动功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <nav class="sticky top-0 z-50 w-full bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">W</div>
+            <span class="font-bold text-lg tracking-tight text-blue-900">文登教育 <span class="text-slate-400 font-normal">| 六级冲刺</span></span>
+        </div>
+        
+        <div class="flex bg-slate-100 p-1 rounded-xl">
+            <button onclick="switchRole('student')" id="btn-student" class="px-4 py-1.5 rounded-lg text-sm transition-all duration-200 role-btn bg-white shadow-sm text-blue-600 font-medium">学生端</button>
+            <button onclick="switchRole('teacher')" id="btn-teacher" class="px-4 py-1.5 rounded-lg text-sm transition-all duration-200 role-btn text-slate-500">教师端</button>
+            <button onclick="switchRole('ops')" id="btn-ops" class="px-4 py-1.5 rounded-lg text-sm transition-all duration-200 role-btn text-slate-500">运营端</button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="hidden md:block text-right">
+                <p class="text-xs text-slate-500">当前用户</p>
+                <p class="text-sm font-medium" id="user-name">西安南大学城学生</p>
+            </div>
+            <div class="w-10 h-10 bg-slate-200 rounded-full border-2 border-white shadow-sm overflow-hidden">
+                <img src="https://placehold.co/100x100/2563eb/ffffff?text=User" alt="Avatar">
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-[calc(100vh-64px)]">
+        <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col transition-all">
+            <div class="p-4 space-y-1" id="sidebar-content">
+                <!-- 动态注入侧边栏内容 -->
+            </div>
+            <div class="mt-auto p-4 border-t border-slate-100">
+                <div class="bg-blue-50 p-4 rounded-xl">
+                    <p class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wider">课程倒计时</p>
+                    <p class="text-sm text-blue-900 font-medium italic">最近一次课: 周三 19:00</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-grow p-6 md:p-10 overflow-y-auto no-scrollbar" id="main-content">
+            <!-- 动态注入页面内容 -->
+        </main>
+    </div>
+
+    <script>
+        let currentRole = 'student';
+        let currentPage = 'st-1';
+
+        const pages = {
+            student: [
+                { id: 'st-1', name: '课程首页', icon: '🏠' },
+                { id: 'st-2', name: '分数筛选报名', icon: '🎯' },
+                { id: 'st-3', name: '课前预习中心', icon: '📚' },
+                { id: 'st-4', name: '课中学习页', icon: '✍️' },
+                { id: 'st-5', name: '批改报告查看', icon: '📄' },
+                { id: 'st-6', name: '模考测评页', icon: '⏱️' }
+            ],
+            teacher: [
+                { id: 'te-1', name: '教师工作台', icon: '📊' },
+                { id: 'te-2', name: '学员信息管理', icon: '👥' },
+                { id: 'te-3', name: '作业批改页', icon: '✒️' },
+                { id: 'te-4', name: '课堂管理页', icon: '🏫' },
+                { id: 'te-5', name: '教学数据查看', icon: '📈' }
+            ],
+            ops: [
+                { id: 'op-1', name: '数据总览看板', icon: '🌍' },
+                { id: 'op-2', name: '转化漏斗看板', icon: '🌪️' },
+                { id: 'op-3', name: '学员画像看板', icon: '👤' },
+                { id: 'op-4', name: '运营任务管理', icon: '📅' }
+            ]
+        };
+
+        function switchRole(role) {
+            currentRole = role;
+            // 更新按钮样式
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-sm', 'text-blue-600', 'font-medium');
+                btn.classList.add('text-slate-500');
+            });
+            const activeBtn = document.getElementById(`btn-${role}`);
+            activeBtn.classList.remove('text-slate-500');
+            activeBtn.classList.add('bg-white', 'shadow-sm', 'text-blue-600', 'font-medium');
+
+            // 更新用户信息
+            const names = { student: '张同学 (西安外国语)', teacher: '王教授 (文登名师)', ops: '李经理 (南分部运营)' };
+            document.getElementById('user-name').innerText = names[role];
+
+            // 渲染侧边栏
+            renderSidebar();
+            // 切换到该角色的第一个页面
+            switchPage(pages[role][0].id);
+        }
+
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar-content');
+            sidebar.innerHTML = pages[currentRole].map(p => `
+                <button onclick="switchPage('${p.id}')" id="side-${p.id}" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-slate-50">
+                    <span class="text-xl">${p.icon}</span>
+                    <span>${p.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function switchPage(pageId) {
+            currentPage = pageId;
+            document.querySelectorAll('#sidebar-content button').forEach(btn => {
+                btn.classList.remove('sidebar-active');
+            });
+            document.getElementById(`side-${pageId}`).classList.add('sidebar-active');
+            renderContent(pageId);
+        }
+
+        function renderContent(id) {
+            const content = document.getElementById('main-content');
+            
+            // 下面通过大量的 HTML 片段模拟不同页面
+            switch(id) {
+                /* 学生端页面 */
+                case 'st-1':
+                    content.innerHTML = `
+                        <div class="max-w-4xl mx-auto">
+                            <div class="bg-gradient-to-r from-blue-700 to-blue-500 rounded-3xl p-8 text-white mb-8 shadow-xl">
+                                <h1 class="text-3xl font-bold mb-4">文登六级550+冲刺小班</h1>
+                                <p class="text-blue-100 mb-6 text-lg max-w-lg">专为西安南大学城学子打造，8次课16小时，周三晚黄金时间，助力高分起飞。</p>
+                                <div class="flex gap-4">
+                                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm">📍 长安校区专享</span>
+                                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm">✍️ 人工批改</span>
+                                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm">📅 每周三晚</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">课程亮点</h3>
+                                    <ul class="space-y-3">
+                                        <li class="flex items-center gap-2 text-slate-600">✅ 批改: 作文+翻译4次精细人工点评</li>
+                                        <li class="flex items-center gap-2 text-slate-600">✅ 师资: 10年+经验文登六级专家组</li>
+                                        <li class="flex items-center gap-2 text-slate-600">✅ 资料: 内部冲刺红宝书(纸质版)</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border border-blue-200 shadow-lg relative overflow-hidden">
+                                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-blue-50 rounded-full"></div>
+                                    <h3 class="font-bold text-lg mb-2">限时优惠价</h3>
+                                    <div class="text-4xl font-bold text-blue-600 mb-4">¥499 <span class="text-sm text-slate-400 line-through font-normal">¥899</span></div>
+                                    <button class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">立即锁定名额</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'st-2':
+                    content.innerHTML = `
+                        <div class="max-w-2xl mx-auto">
+                            <h2 class="text-2xl font-bold mb-6 text-center">精英入班筛选</h2>
+                            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                <p class="text-slate-500 mb-6 text-center">本班型针对 450-500 分基础学生，请诚实填写以便老师调整进度。</p>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">上次六级分数</label>
+                                        <input type="range" min="400" max="550" class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                                        <div class="flex justify-between text-xs text-slate-400 mt-2"><span>400</span><span>550</span></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="p-4 border-2 border-blue-600 rounded-xl bg-blue-50">
+                                            <p class="text-xs text-blue-600 mb-1">推荐班型</p>
+                                            <p class="font-bold">550+ 冲刺小班</p>
+                                        </div>
+                                        <div class="p-4 border border-slate-200 rounded-xl">
+                                            <p class="text-xs text-slate-400 mb-1">上课地点</p>
+                                            <p class="font-bold">长安校区1号教学楼</p>
+                                        </div>
+                                    </div>
+                                    <button class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">支付 ¥499 报名</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'st-3':
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <h2 class="text-2xl font-bold">L1: 听力技巧突破 - 课前预习</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="md:col-span-2 bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100">
+                                    <div class="aspect-video bg-slate-900 flex items-center justify-center text-white">
+                                        <span class="text-6xl">▶️</span>
+                                    </div>
+                                    <div class="p-6">
+                                        <h3 class="font-bold mb-2">预习视频：听力关键词抓取法</h3>
+                                        <p class="text-sm text-slate-500">时长：12:45 | 已学习 0%</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-6">
+                                    <div class="bg-white p-6 rounded-2xl border border-slate-100">
+                                        <h3 class="font-bold mb-4">预习清单</h3>
+                                        <div class="space-y-4">
+                                            <label class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 rounded border-slate-300"> <span class="text-sm">阅读听力词汇表(第1-3页)</span></label>
+                                            <label class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 rounded border-slate-300"> <span class="text-sm">完成预习小测试</span></label>
+                                            <label class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 rounded border-slate-300"> <span class="text-sm">下载课件PDF</span></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'st-4':
+                    content.innerHTML = `
+                        <div class="flex flex-col h-full gap-6">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold">周三晚间课堂 | 现场模式</h2>
+                                <div class="flex gap-2">
+                                    <button class="bg-green-100 text-green-600 px-4 py-2 rounded-lg font-medium">已签到</button>
+                                    <span class="bg-slate-100 px-4 py-2 rounded-lg">20:15 / 21:00</span>
+                                </div>
+                            </div>
+                            <div class="bg-white flex-grow rounded-2xl p-8 border border-slate-200 shadow-inner">
+                                <div class="max-w-2xl mx-auto space-y-6 text-center">
+                                    <p class="text-xl font-medium">课堂实时练习：选词填空 (5min)</p>
+                                    <div class="p-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 text-slate-400">
+                                        练习题目展示区...
+                                    </div>
+                                    <div class="flex justify-center gap-4">
+                                        <button class="px-8 py-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">提交练习</button>
+                                        <button class="px-8 py-3 bg-white border border-slate-200 rounded-xl">呼叫老师</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'st-5':
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <h2 class="text-2xl font-bold">人工批改报告</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border-l-4 border-blue-600 shadow-sm">
+                                    <p class="text-xs text-slate-500">作文分数</p>
+                                    <p class="text-3xl font-bold text-blue-600">12/15</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border-l-4 border-purple-600 shadow-sm">
+                                    <p class="text-xs text-slate-500">翻译分数</p>
+                                    <p class="text-3xl font-bold text-purple-600">11/15</p>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-2xl p-8 border border-slate-100">
+                                <h3 class="font-bold text-lg mb-4">名师精评</h3>
+                                <div class="bg-blue-50 p-6 rounded-xl text-blue-900 leading-relaxed italic mb-6">
+                                    "张同学，你的句式结构比上次丰富了很多，但在从句引导词的选择上还有细微失误。建议复习非谓语动词章节。作文第二段的逻辑衔接非常出彩！"
+                                </div>
+                                <div class="space-y-4">
+                                    <h4 class="font-bold">原文修改建议：</h4>
+                                    <p class="text-sm p-3 bg-slate-50 rounded border border-slate-200"><del class="text-red-500">The technology is...</del> <ins class="text-green-600 font-medium">Technological advancement has...</ins></p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'st-6':
+                    content.innerHTML = `
+                        <div class="max-w-5xl mx-auto space-y-8">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <h2 class="text-2xl font-bold">结课全真模考</h2>
+                                    <p class="text-slate-500 italic">模拟12月考试真实环境</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-slate-400">剩余时间</p>
+                                    <p class="text-2xl font-mono font-bold text-red-500">125:00</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-8 h-[600px]">
+                                <div class="flex-grow bg-white rounded-2xl p-10 overflow-y-auto border border-slate-200">
+                                    <h3 class="font-bold text-xl mb-6">Section A: Writing</h3>
+                                    <p class="text-slate-700 leading-relaxed mb-6">Directions: For this part, you are allowed 30 minutes to write an essay on... </p>
+                                    <textarea class="w-full h-80 p-4 bg-slate-50 rounded-xl border border-slate-200 focus:outline-blue-600" placeholder="在此输入你的作文内容..."></textarea>
+                                </div>
+                                <div class="w-64 flex-shrink-0 bg-slate-100 rounded-2xl p-6">
+                                    <h4 class="font-bold mb-4">答题卡</h4>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        <div class="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-lg text-xs font-bold shadow-md shadow-blue-200 cursor-pointer">W</div>
+                                        <div class="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-lg text-xs font-bold shadow-md shadow-blue-200 cursor-pointer">L</div>
+                                        <div class="w-10 h-10 bg-white border border-slate-300 flex items-center justify-center rounded-lg text-xs cursor-pointer hover:border-blue-500">3</div>
+                                        <div class="w-10 h-10 bg-white border border-slate-300 flex items-center justify-center rounded-lg text-xs cursor-pointer hover:border-blue-500">4</div>
+                                        <div class="w-10 h-10 bg-white border border-slate-300 flex items-center justify-center rounded-lg text-xs cursor-pointer hover:border-blue-500">5</div>
+                                    </div>
+                                    <button class="w-full mt-10 bg-red-500 text-white py-3 rounded-xl font-bold">交卷</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                /* 教师端页面 */
+                case 'te-1':
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                <h3 class="font-bold text-slate-500 mb-4 uppercase text-xs tracking-widest">待处理任务</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                                        <span class="text-sm font-medium">32份 作文待批改</span>
+                                        <button class="text-red-600 text-xs font-bold underline">立即处理</button>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                                        <span class="text-sm font-medium">今晚 19:00 线下课</span>
+                                        <button class="text-blue-600 text-xs font-bold underline">进入课堂</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                <h3 class="font-bold text-slate-500 mb-4 uppercase text-xs tracking-widest">班级出勤率</h3>
+                                <div class="text-4xl font-bold text-blue-600 mb-2">94.2%</div>
+                                <p class="text-sm text-slate-400">平均出勤 24/25 人</p>
+                            </div>
+                            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                                <h3 class="font-bold text-slate-500 mb-4 uppercase text-xs tracking-widest">作业完成度</h3>
+                                <div class="text-4xl font-bold text-purple-600 mb-2">88.5%</div>
+                                <p class="text-sm text-slate-400">较上期提升 4%</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'te-2':
+                    content.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                                <h2 class="font-bold text-xl text-blue-900">西安南大学城 1号班 学员名单</h2>
+                                <input type="text" placeholder="搜索学生..." class="px-4 py-2 bg-slate-50 rounded-lg border border-slate-200 text-sm">
+                            </div>
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-500 text-sm uppercase">
+                                    <tr>
+                                        <th class="px-6 py-4">学生姓名</th>
+                                        <th class="px-6 py-4">初始分数</th>
+                                        <th class="px-6 py-4">出勤率</th>
+                                        <th class="px-6 py-4">作业情况</th>
+                                        <th class="px-6 py-4">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 font-medium">张晓明 (西安外国语)</td>
+                                        <td class="px-6 py-4">485</td>
+                                        <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">100%</span></td>
+                                        <td class="px-6 py-4 text-sm">全勤提交</td>
+                                        <td class="px-6 py-4"><button class="text-blue-600 text-sm font-bold">详细分析</button></td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 font-medium">李雷 (西安邮电)</td>
+                                        <td class="px-6 py-4">462</td>
+                                        <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">80%</span></td>
+                                        <td class="px-6 py-4 text-sm text-red-500">缺1次作文</td>
+                                        <td class="px-6 py-4"><button class="text-blue-600 text-sm font-bold">详细分析</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    break;
+                case 'te-3':
+                    content.innerHTML = `
+                        <div class="flex gap-6 h-[700px]">
+                            <div class="w-1/2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-bold">学生原文：张晓明</h3>
+                                    <span class="text-xs bg-slate-100 px-2 py-1 rounded">话题：教育全球化</span>
+                                </div>
+                                <div class="bg-slate-50 p-6 rounded-xl overflow-y-auto flex-grow text-slate-700 leading-loose">
+                                    With the develop of technology, education is become more and more important...
+                                </div>
+                            </div>
+                            <div class="w-1/2 flex flex-col gap-6">
+                                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                    <h3 class="font-bold mb-4">批改打分</h3>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="逻辑分" class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm">
+                                        <input type="number" placeholder="语法分" class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm">
+                                    </div>
+                                </div>
+                                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex-grow">
+                                    <h3 class="font-bold mb-4">名师点评</h3>
+                                    <textarea class="w-full h-48 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm focus:outline-blue-600 mb-4" placeholder="在此输入个性化点评..."></textarea>
+                                    <button class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-100">发布报告</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'te-4':
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold">当前课堂：六级翻译技巧</h2>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-bold">结束课堂</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="col-span-2 bg-white p-8 rounded-2xl border border-slate-200 h-96 flex flex-col items-center justify-center space-y-4">
+                                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl">📡</div>
+                                    <p class="font-bold text-lg">正在广播练习题目</p>
+                                    <p class="text-slate-400">全班 25 人，已提交 18 人</p>
+                                    <div class="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="w-[72%] h-full bg-blue-600"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-6">
+                                    <h3 class="font-bold">课堂互动工具</h3>
+                                    <button class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-medium border border-blue-100">发起全班点名</button>
+                                    <button class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-medium border border-blue-100">随机抽取学员</button>
+                                    <button class="w-full py-3 bg-purple-50 text-purple-600 rounded-xl font-medium border border-purple-100">同步本节课件</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'te-5':
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <h2 class="text-2xl font-bold">本班教学大数据</h2>
+                            <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+                                <h3 class="font-bold mb-6">班级薄弱环节分析</h3>
+                                <div class="space-y-6">
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-2"><span>听力技巧</span><span class="font-bold text-green-600">优秀</span></div>
+                                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden"><div class="w-[85%] h-full bg-green-500"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-2"><span>长难句翻译</span><span class="font-bold text-red-500">薄弱</span></div>
+                                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden"><div class="w-[42%] h-full bg-red-500"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-2"><span>快速阅读</span><span class="font-bold text-yellow-600">中等</span></div>
+                                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden"><div class="w-[65%] h-full bg-yellow-500"></div></div>
+                                    </div>
+                                </div>
+                                <p class="mt-8 p-4 bg-blue-50 rounded-xl text-sm text-blue-800 italic">
+                                    💡 建议：下节课加强"倒装句"和"虚拟语气"的汉译英专项练习。
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                /* 运营端页面 */
+                case 'op-1':
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">累计销售额</p>
+                                <p class="text-3xl font-bold text-blue-900">¥149,700</p>
+                                <p class="text-xs text-green-600 mt-2">↑ 12.5% 较上周</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">本月招生人数</p>
+                                <p class="text-3xl font-bold text-blue-900">300</p>
+                                <p class="text-xs text-blue-500 mt-2">满班率 85%</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">课单价 (Avg)</p>
+                                <p class="text-3xl font-bold text-blue-900">¥499</p>
+                                <p class="text-xs text-slate-400 mt-2">固定班型</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">用户活跃度</p>
+                                <p class="text-3xl font-bold text-blue-900">78.4%</p>
+                                <p class="text-xs text-green-600 mt-2">预习完成率高</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-64 flex items-center justify-center text-slate-300 italic border-dashed border-4">
+                           [ 全年度招生趋势图表占位 ]
+                        </div>
+                    `;
+                    break;
+                case 'op-2':
+                    content.innerHTML = `
+                        <div class="max-w-2xl mx-auto py-10">
+                            <h2 class="text-2xl font-bold mb-10 text-center text-blue-900">南大学城六级冲刺班 - 转化漏斗</h2>
+                            <div class="space-y-4">
+                                <div class="w-full bg-blue-600 p-6 rounded-2xl text-white flex justify-between items-center shadow-lg shadow-blue-100">
+                                    <span class="font-medium">官网/地推访问量 (曝光)</span>
+                                    <span class="font-bold text-xl">12,400</span>
+                                </div>
+                                <div class="w-[85%] mx-auto bg-blue-500 p-6 rounded-2xl text-white flex justify-between items-center shadow-lg shadow-blue-100">
+                                    <span class="font-medium">填写分筛查问卷 (潜客)</span>
+                                    <span class="font-bold text-xl">4,200</span>
+                                </div>
+                                <div class="w-[70%] mx-auto bg-blue-400 p-6 rounded-2xl text-white flex justify-between items-center shadow-lg shadow-blue-100">
+                                    <span class="font-medium">进入支付页面 (意向)</span>
+                                    <span class="font-bold text-xl">1,100</span>
+                                </div>
+                                <div class="w-[55%] mx-auto bg-blue-300 p-6 rounded-2xl text-blue-900 flex justify-between items-center shadow-lg shadow-blue-100">
+                                    <span class="font-medium">完成全额支付 (成交)</span>
+                                    <span class="font-bold text-xl">300</span>
+                                </div>
+                            </div>
+                            <div class="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                                <p class="text-sm font-bold mb-2">漏斗洞察：</p>
+                                <p class="text-sm text-slate-500 leading-relaxed">问卷到支付的流失率较高 (74%)，主要是分段筛查后学生认为价格偏高。建议下期针对 450 分以下基础学生推出 ¥299 体验课。</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'op-3':
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                                <h3 class="font-bold mb-6 flex items-center gap-2">🏫 高校来源分布</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium">西安邮电</span>
+                                        <div class="flex-grow h-4 bg-slate-100 rounded-full overflow-hidden"><div class="w-[45%] h-full bg-blue-500"></div></div>
+                                        <span class="text-xs text-slate-400 font-bold">45%</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium">西安外国语</span>
+                                        <div class="flex-grow h-4 bg-slate-100 rounded-full overflow-hidden"><div class="w-[30%] h-full bg-blue-500"></div></div>
+                                        <span class="text-xs text-slate-400 font-bold">30%</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium">陕师大</span>
+                                        <div class="flex-grow h-4 bg-slate-100 rounded-full overflow-hidden"><div class="w-[15%] h-full bg-blue-500"></div></div>
+                                        <span class="text-xs text-slate-400 font-bold">15%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                                <h3 class="font-bold mb-6 flex items-center gap-2">📊 学员初始分数段</h3>
+                                <div class="flex justify-center items-center h-48">
+                                    <div class="w-32 h-32 rounded-full border-[12px] border-blue-600 border-l-blue-200 flex items-center justify-center text-xs font-bold text-blue-600">
+                                        480-500分<br>为主
+                                    </div>
+                                </div>
+                                <div class="flex justify-center gap-6 mt-4">
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-full"></span><span class="text-xs">480-500 (62%)</span></div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-200 rounded-full"></span><span class="text-xs">450-480 (38%)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'op-4':
+                    content.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-2xl font-bold">待办任务与排班</h2>
+                                <button class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm">+ 新建任务</button>
+                            </div>
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-100">
+                                <div class="p-6 border-b border-slate-100 bg-slate-50 rounded-t-2xl flex gap-6">
+                                    <span class="text-blue-600 font-bold border-b-2 border-blue-600 pb-1">招生任务</span>
+                                    <span class="text-slate-400">教务任务</span>
+                                    <span class="text-slate-400">物料准备</span>
+                                </div>
+                                <div class="p-4 space-y-4">
+                                    <div class="flex items-center gap-4 p-4 border border-slate-100 rounded-xl hover:bg-slate-50">
+                                        <input type="checkbox" class="w-5 h-5 rounded text-blue-600">
+                                        <div class="flex-grow">
+                                            <p class="font-bold">西邮南校区地推物料配送</p>
+                                            <p class="text-xs text-slate-400">负责人：王小二 | 截止：明日 10:00</p>
+                                        </div>
+                                        <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">进行中</span>
+                                    </div>
+                                    <div class="flex items-center gap-4 p-4 border border-slate-100 rounded-xl hover:bg-slate-50 opacity-50">
+                                        <input type="checkbox" checked class="w-5 h-5 rounded text-blue-600">
+                                        <div class="flex-grow">
+                                            <p class="font-bold line-through">周三晚线下班教室申请</p>
+                                            <p class="text-xs text-slate-400">负责人：教务办 | 已完成</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">已结项</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        // 默认加载学生端
+        window.onload = () => {
+            switchRole('student');
+        };
+    </script>
+</body>
+</html>
